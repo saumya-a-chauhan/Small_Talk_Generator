@@ -82,7 +82,7 @@ serve(async (req) => {
       )
     )
 
-    // Gemini prompt
+    // Gemini prompt (FULL CONTENT KEPT)
     const prompt = `
 You are **The Ultimate Conversation Strategist**.  
 Your job is to generate conversation openers that make first-time interactions smooth, engaging, and meaningful.  
@@ -106,57 +106,26 @@ The goal:
 
 ⚡ CRITICAL RULES:  
 
-1. **NEVER ask users to fill in information** - All conversation starters must be complete and self-contained
-2. **Use current knowledge and trends** - Reference real, recent developments in their fields of interest
-3. **Focus on what's provided** - Only use the interests and context given, don't assume additional information
-4. **Make it actionable immediately** - Users should be able to use these starters right away without preparation
-
----
-
-🎯 CONVERSATION STARTER GUIDELINES:  
-
-**DO:**
-- Reference specific, recent trends in their field (AI breakthroughs, market changes, new technologies)
-- Ask about their personal journey or experiences with their interests
-- Connect to current events or industry developments
-- Use the actual interests provided without requiring more details
-- Make starters that work immediately without additional research
-
-**DON'T:**
-- Ask "if you know about X" or "mention if you have experience with Y"
-- Require users to research or look up information
-- Use placeholder text like "[mention a startup]" or "[if you know about]"
-- Assume information not provided in the inputs
+1. **NEVER ask users to fill in information** - All conversation starters must be complete and self-contained  
+2. **Use current knowledge and trends** - Reference real, recent developments in their fields of interest  
+3. **Focus on what's provided** - Only use the interests and context given, don't assume additional information  
+4. **Make it actionable immediately** - Users should be able to use these starters right away without preparation  
 
 ---
 
 📌 TASKS:  
 
 1. **based_on_their_interests**  
-   - Generate 10 conversation starters focused on ${their_name}'s specific interests: ${theirInterests.join(', ')}
-   - Use current knowledge about these fields (AI, blockchain, fintech, etc.)
-   - Reference real trends, recent developments, or industry insights
-   - Make each starter complete and ready to use immediately
+   - Generate 10 conversation starters focused on ${their_name}'s specific interests: ${theirInterests.join(', ')}  
+   - Use current knowledge about these fields  
+   - Reference real trends, recent developments, or industry insights  
+   - Make each starter complete and ready to use immediately  
 
 2. **based_on_common_interests**  
-   - Generate 10 conversation starters highlighting shared passions between ${your_name} and ${their_name}
-   - Focus on the common interests: ${commonInterests.join(', ') || 'technology and innovation'}
-   - Create natural bonding points around shared knowledge areas
-   - Encourage collaboration and knowledge exchange
-
----
-
-💡 EXAMPLE STYLES (Context: ${context}):  
-
-**For Tech/Professional Contexts:**
-- "The recent developments in [specific technology] have been fascinating. What's your take on how it's evolving?"
-- "I've been following the [industry trend] closely. How do you see it impacting your work?"
-- "What's the most exciting project you've worked on recently in [their field]?"
-
-**For Casual Contexts:**
-- "I love how [interest] combines creativity with technical skills. What drew you to it initially?"
-- "What's the most rewarding aspect of working in [their field]?"
-- "How do you stay updated with all the rapid changes in [their industry]?"
+   - Generate 10 conversation starters highlighting shared passions between ${your_name} and ${their_name}  
+   - Focus on the common interests: ${commonInterests.join(', ') || 'technology and innovation'}  
+   - Create natural bonding points around shared knowledge areas  
+   - Encourage collaboration and knowledge exchange  
 
 ---
 
@@ -165,28 +134,10 @@ Return ONLY valid JSON in the format:
 
 {
   "based_on_their_interests": [
-    "string 1",
-    "string 2",
-    "string 3",
-    "string 4",
-    "string 5",
-    "string 6",
-    "string 7",
-    "string 8",
-    "string 9",
-    "string 10"
+    "string 1", "string 2", ..., "string 10"
   ],
   "based_on_common_interests": [
-    "string 1", 
-    "string 2",
-    "string 3",
-    "string 4",
-    "string 5",
-    "string 6",
-    "string 7",
-    "string 8",
-    "string 9",
-    "string 10"
+    "string 1", "string 2", ..., "string 10"
   ]
 }
 
@@ -216,12 +167,20 @@ Do not include any other text, explanations, or formatting. Just the JSON object
     }
 
     let outputText = geminiData.candidates[0].content.parts[0].text.trim()
-    
-    // Always return the raw response from Gemini exactly as it comes
-    const result = {
-      raw_response: outputText,
-      based_on_their_interests: [`Raw AI Response: ${outputText}`],
-      based_on_common_interests: [`Raw AI Response: ${outputText}`]
+
+    // ✅ Strip Markdown code fences
+    outputText = outputText.replace(/```json|```/g, '').trim()
+
+    // ✅ Parse JSON or fallback
+    let result
+    try {
+      result = JSON.parse(outputText)
+    } catch {
+      result = {
+        based_on_their_interests: [],
+        based_on_common_interests: [],
+        raw_response: outputText
+      }
     }
 
     return new Response(
@@ -232,6 +191,7 @@ Do not include any other text, explanations, or formatting. Just the JSON object
           their_interests: theirInterests, 
           common_interests: commonInterests,
           context,
+          // ✅ Ensure raw_ai_response is always plain string, not JSON
           raw_ai_response: outputText
         }
       }),
