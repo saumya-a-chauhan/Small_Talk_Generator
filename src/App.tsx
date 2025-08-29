@@ -57,7 +57,6 @@ function App() {
       try {
         data = JSON.parse(responseText)
       } catch {
-        // fallback if server gives raw text
         data = {
           based_on_their_interests: [],
           based_on_common_interests: [],
@@ -129,6 +128,14 @@ function App() {
             <Users className="w-5 h-5" />
             <span>Perfect for conferences, networking events & awkward moments</span>
             <Rocket className="w-5 h-5" />
+          </div>
+
+          {/* ⚡ Highlight Box (restored) */}
+          <div className="bg-white/10 border border-yellow-400/30 rounded-xl p-4 max-w-2xl mx-auto mb-8">
+            <p className="text-yellow-200 font-medium">
+              ⚡ We all know that 30-second window to impress industry leaders...
+              Don’t waste it with <span className="italic">“So... nice weather, huh?”</span>
+            </p>
           </div>
         </div>
 
