@@ -35,11 +35,12 @@ function App() {
     setResult(null)
 
     try {
-      const response = await fetch("https://ebejyzyphijxhcgekmgg.functions.supabase.co/generate-starters", {
+      const response = await fetch("https://ebejyzyphijxhcgekmgg.supabase.co/functions/v1/generate-starters", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+          // ✅ FIXED: use Vite env variable instead of process.env
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify(formData)
       })
