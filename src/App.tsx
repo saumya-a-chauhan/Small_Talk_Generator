@@ -35,7 +35,7 @@ function App() {
     setResult(null)
 
     try {
-      const response = await fetch("https://ebejyzyphijxhcgekmgg.functions.supabase.co/generate-starters", {
+      const response = await fetch("https://ebejyzyphijxhcgekmgg.supabase.co/functions/v1/generate-starters", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -273,7 +273,7 @@ function App() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 italic">No structured suggestions yet. See <strong>Context Summary</strong> below for the raw response.</p>
+                  <p className="text-gray-400 italic">No structured suggestions yet. See <strong>Context Summary</strong> below.</p>
                 )}
               </div>
 
@@ -300,7 +300,7 @@ function App() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 italic">No structured suggestions yet. See <strong>Context Summary</strong> below for the raw response.</p>
+                  <p className="text-gray-400 italic">No structured suggestions yet. See <strong>Context Summary</strong> below.</p>
                 )}
               </div>
             </div>
@@ -324,8 +324,8 @@ function App() {
                   </div>
                 </div>
 
-                {/* Debug block only in dev */}
-                {import.meta.env.DEV && result.metadata?.raw_ai_response && (
+                {/* Debug block — only in development */}
+                {import.meta.env.DEV && !!result.metadata?.raw_ai_response && (
                   <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
                     <p className="text-xs text-gray-400 mb-2">Raw AI Response (for debugging):</p>
                     <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-words overflow-x-auto">
