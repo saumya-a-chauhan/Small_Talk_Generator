@@ -24,59 +24,49 @@ function App() {
     context: ''
   })
   
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<ConversationStarters | null>(null)
-  const [error, setError] = useState('')
-  const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
-
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setResult(null)
+  e.preventDefault()
+  setLoading(true)
+  setError('')
+  setResult(null)
 
-    try {
-      const response = await fetch(config.apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(config.isProduction && {
-            'Authorization': `Bearer ${config.supabaseAnonKey}`
-          })
-        },
-        body: JSON.stringify(formData)
-      })
+  try {
+    const response = await fetch(config.apiEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(config.isProduction && {
+          'Authorization': `Bearer ${config.supabaseAnonKey}`
+        })
+      },
+      body: JSON.stringify(formData)
+    })
 
-      // Check if response has content before parsing
-      const responseText = await response.text()
-      console.log('Raw response:', responseText)
-      
-      let data
-      try {
-        data = responseText ? JSON.parse(responseText) : {}
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError)
-        // If JSON parsing fails, create a fallback response with the raw text
-        data = {
-          error: 'Invalid JSON response from server',
-          raw_response: responseText,
-          based_on_their_interests: [`Raw server response: ${responseText}`],
-          based_on_common_interests: [`Raw server response: ${responseText}`]
-        }
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`)
-      }
-
-      setResult(data)
-    } catch (err) {
-      console.error('Full error:', err)
-      setError(err instanceof Error ? err.message : 'Something went wrong! Check console for details.')
-    } finally {
-      setLoading(false)
+    // ✅ First check for HTTP errors
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
     }
+
+    // ✅ Then safely parse JSON
+    const responseText = await response.text()
+    let data: ConversationStarters
+    try {
+      data = JSON.parse(responseText)
+    } catch (parseErr) {
+      throw new Error(`Invalid JSON from server: ${responseText}`)
+    }
+
+    setResult(data)
+  } catch (err) {
+    console.error('Full error:', err)
+    setError(err instanceof Error ? err.message : 'Something went wrong! Check console for details.')
+  } finally {
+    setLoading(false)
   }
+}
+
+
 
   const copyToClipboard = (text: string, index: string) => {
     navigator.clipboard.writeText(text)
