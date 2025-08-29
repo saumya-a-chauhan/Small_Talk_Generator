@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Sparkles, Users, MessageCircle, Zap, Copy, Heart, Rocket } from 'lucide-react'
-import config from './config'
 
 interface ConversationStarters {
   based_on_their_interests: string[]
@@ -36,13 +35,11 @@ function App() {
     setResult(null)
 
     try {
-      const response = await fetch(config.apiEndpoint, {
+      const response = await fetch("https://ebejyzyphijxhcgekmgg.functions.supabase.co/generate-starters", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(config.isProduction && {
-            'Authorization': `Bearer ${config.supabaseAnonKey}`
-          })
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify(formData)
       })
@@ -130,7 +127,7 @@ function App() {
             <Rocket className="w-5 h-5" />
           </div>
 
-          {/* ⚡ Highlight Box (restored) */}
+          {/* ⚡ Highlight Box */}
           <div className="bg-white/10 border border-yellow-400/30 rounded-xl p-4 max-w-2xl mx-auto mb-8">
             <p className="text-yellow-200 font-medium">
               ⚡ We all know that 30-second window to impress industry leaders...
