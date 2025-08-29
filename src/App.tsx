@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Sparkles, Users, MessageCircle, Zap, Copy, ExternalLink, Heart, Rocket } from 'lucide-react'
+import config from './config'
 
 interface ConversationStarters {
   based_on_their_interests: string[]
@@ -35,10 +36,13 @@ function App() {
     setResult(null)
 
     try {
-      const response = await fetch('/api/generate-starters', {
+      const response = await fetch(config.apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(config.isProduction && {
+            'Authorization': `Bearer ${config.supabaseAnonKey}`
+          })
         },
         body: JSON.stringify(formData)
       })
