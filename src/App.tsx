@@ -35,11 +35,10 @@ function App() {
     setResult(null)
 
     try {
-      const response = await fetch("https://ebejyzyphijxhcgekmgg.supabase.co/functions/v1/generate-starters", {
+      const response = await fetch("https://ebejyzyphijxhcgekmgg.functions.supabase.co/generate-starters", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // ✅ FIXED: use Vite env variable instead of process.env
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify(formData)
@@ -324,11 +323,19 @@ function App() {
                     <p className="text-yellow-300">{result.metadata.common_interests.join(', ') || 'None detected'}</p>
                   </div>
                 </div>
-                {result.metadata.raw_ai_response && (
+
+                {/* Debug block only in dev */}
+                {import.meta.env.DEV && result.metadata?.raw_ai_response && (
                   <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-                    <p className="text-xs text-gray-400 mb-1">Raw AI Response (for debugging):</p>
-                    <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-words">
-                      {result.metadata.raw_ai_response}
+                    <p className="text-xs text-gray-400 mb-2">Raw AI Response (for debugging):</p>
+                    <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-words overflow-x-auto">
+                      {(() => {
+                        try {
+                          return JSON.stringify(JSON.parse(result.metadata!.raw_ai_response!), null, 2)
+                        } catch {
+                          return result.metadata!.raw_ai_response
+                        }
+                      })()}
                     </pre>
                   </div>
                 )}
