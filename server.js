@@ -8,7 +8,44 @@ const PORT = 54321;
 app.use(cors());
 app.use(express.json());
 
-// Mock the Supabase Edge Function
+// Gemini API key (you should set this as an environment variable in production)
+const GEMINI_API_KEY = 'AIzaSyApzKkyPifrPGh1AB9LQbcMuEPLsIB9dqI';
+
+// Function to extract info from URL (converted from Python)
+async function extractInfoFromUrl(url) {
+  try {
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    };
+    
+    const response = await fetch(url, { 
+      headers,
+      signal: AbortSignal.timeout(10000)
+    });
+    
+    if (!response.ok) return [];
+    
+    const text = await response.text();
+    
+    // Simple text extraction (removing HTML tags)
+    const cleanText = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+    
+    // Extract capitalized words (similar to Python regex)
+    const words = cleanText.match(/\b[A-Z][a-zA-Z]{2,}\b/g) || [];
+    
+    // Remove duplicates and filter length
+    const keywords = [...new Set(words)]
+      .filter(w => w.length > 2 && w.length < 20)
+      .slice(0, 10);
+    
+    return keywords;
+  } catch (error) {
+    console.error('URL extraction error:', error);
+    return [];
+  }
+}
+
+// Real Supabase Edge Function implementation
 app.post('/functions/v1/generate-starters', async (req, res) => {
   try {
     const { 
@@ -19,10 +56,22 @@ app.post('/functions/v1/generate-starters', async (req, res) => {
       context
     } = req.body;
 
-    // Process interests (simplified version)
-    const yourInterests = your_info.split(',').map(i => i.trim()).filter(Boolean);
-    const theirInterests = their_info.split(',').map(i => i.trim()).filter(Boolean);
-    
+    // Process your interests
+    let yourInterests = [];
+    if (your_info.match(/^https?:\/\//)) {
+      yourInterests = await extractInfoFromUrl(your_info);
+    } else {
+      yourInterests = your_info.split(',').map(i => i.trim()).filter(Boolean);
+    }
+
+    // Process their interests  
+    let theirInterests = [];
+    if (their_info.match(/^https?:\/\//)) {
+      theirInterests = await extractInfoFromUrl(their_info);
+    } else {
+      theirInterests = their_info.split(',').map(i => i.trim()).filter(Boolean);
+    }
+
     // Find common interests
     const commonInterests = yourInterests.filter(interest => 
       theirInterests.some(theirInterest => 
@@ -31,38 +80,180 @@ app.post('/functions/v1/generate-starters', async (req, res) => {
       )
     );
 
-    // Mock Gemini API response - this simulates what the real API would return
-    const mockGeminiResponse = `Based on your interests in ${yourInterests.join(', ')} and ${their_name}'s interests in ${theirInterests.join(', ')}, here are some conversation starters for your ${context}:
+    // Gemini prompt
+    const prompt = `
+You are **The Ultimate Conversation Strategist**.  
+Your job is to generate conversation openers that make first-time interactions smooth, engaging, and meaningful.  
 
-**Based on their interests:**
-1. "I noticed you're into ${theirInterests[0] || 'technology'}. What's the most exciting development you've seen in that field recently?"
-2. "Your work in ${theirInterests[1] || 'innovation'} sounds fascinating. How did you get started in that area?"
-3. "I'm curious about ${theirInterests[2] || 'your industry'}. What trends are you seeing that most people aren't talking about?"
-4. "Your background in ${theirInterests[3] || 'this field'} is impressive. What's the biggest challenge you're facing right now?"
-5. "I'd love to hear more about ${theirInterests[4] || 'your experience'}. What's something that surprised you recently?"
+The goal:  
+- Break the ice naturally.  
+- Build comfort and trust.  
+- Spark curiosity so the other person wants to keep talking.  
+- Respect the setting (formal vs. informal).  
+- Make ${your_name} appear confident, thoughtful, and genuinely interested in ${their_name}.  
 
-**Based on common interests:**
-1. "We both seem interested in ${commonInterests[0] || 'learning'}. What's the most valuable thing you've discovered about it?"
-2. "It's great that we share an interest in ${commonInterests[1] || 'growth'}. How do you stay updated in that area?"
-3. "Our mutual interest in ${commonInterests[2] || 'development'} is exciting. What's your take on the current state of things?"
-4. "Since we both care about ${commonInterests[3] || 'progress'}, what do you think is the next big thing to watch?"
-5. "Our shared passion for ${commonInterests[4] || 'innovation'} is perfect for this ${context}. What's inspiring you lately?"`;
+---
 
-    // Return the response exactly as Gemini would (raw text, no JSON parsing)
-    const result = {
-      raw_response: mockGeminiResponse,
-      based_on_their_interests: [`Raw AI Response: ${mockGeminiResponse}`],
-      based_on_common_interests: [`Raw AI Response: ${mockGeminiResponse}`],
-      metadata: {
-        your_interests: yourInterests,
-        their_interests: theirInterests,
-        common_interests: commonInterests,
-        context,
-        raw_ai_response: mockGeminiResponse
+📥 INPUTS:  
+- **You**: ${your_name}, interests: ${yourInterests.join(', ')}.  
+- **Person you're meeting**: ${their_name}, interests: ${theirInterests.join(', ')}.  
+- **Meeting Context**: ${context} (examples: networking event, job interview, coffee chat, tech conference, exhibition, meeting senior leader).  
+- **Common Interests**: ${commonInterests.join(', ') || 'None detected'}.  
+
+---
+
+⚡ CRITICAL RULES:  
+
+1. **NEVER ask users to fill in information** - All conversation starters must be complete and self-contained
+2. **Use current knowledge and trends** - Reference real, recent developments in their fields of interest
+3. **Focus on what's provided** - Only use the interests and context given, don't assume additional information
+4. **Make it actionable immediately** - Users should be able to use these starters right away without preparation
+
+---
+
+🎯 CONVERSATION STARTER GUIDELINES:  
+
+**DO:**
+- Reference specific, recent trends in their field (AI breakthroughs, market changes, new technologies)
+- Ask about their personal journey or experiences with their interests
+- Connect to current events or industry developments
+- Use the actual interests provided without requiring more details
+- Make starters that work immediately without additional research
+
+**DON'T:**
+- Ask "if you know about X" or "mention if you have experience with Y"
+- Require users to research or look up information
+- Use placeholder text like "[mention a startup]" or "[if you know about]"
+- Assume information not provided in the inputs
+
+---
+
+📌 TASKS:  
+
+1. **based_on_their_interests**  
+   - Generate 10 conversation starters focused on ${their_name}'s specific interests: ${theirInterests.join(', ')}
+   - Use current knowledge about these fields (AI, blockchain, fintech, etc.)
+   - Reference real trends, recent developments, or industry insights
+   - Make each starter complete and ready to use immediately
+
+2. **based_on_common_interests**  
+   - Generate 10 conversation starters highlighting shared passions between ${your_name} and ${their_name}
+   - Focus on the common interests: ${commonInterests.join(', ') || 'technology and innovation'}
+   - Create natural bonding points around shared knowledge areas
+   - Encourage collaboration and knowledge exchange
+
+---
+
+💡 EXAMPLE STYLES (Context: ${context}):  
+
+**For Tech/Professional Contexts:**
+- "The recent developments in [specific technology] have been fascinating. What's your take on how it's evolving?"
+- "I've been following the [industry trend] closely. How do you see it impacting your work?"
+- "What's the most exciting project you've worked on recently in [their field]?"
+
+**For Casual Contexts:**
+- "I love how [interest] combines creativity with technical skills. What drew you to it initially?"
+- "What's the most rewarding aspect of working in [their field]?"
+- "How do you stay updated with all the rapid changes in [their industry]?"
+
+---
+
+🎯 OUTPUT:  
+Return ONLY valid JSON in the format:  
+
+{
+  "based_on_their_interests": [
+    "string 1",
+    "string 2",
+    "string 3",
+    "string 4",
+    "string 5",
+    "string 6",
+    "string 7",
+    "string 8",
+    "string 9",
+    "string 10"
+  ],
+  "based_on_common_interests": [
+    "string 1", 
+    "string 2",
+    "string 3",
+    "string 4",
+    "string 5",
+    "string 6",
+    "string 7",
+    "string 8",
+    "string 9",
+    "string 10"
+  ]
+}
+
+Do not include any other text, explanations, or formatting. Just the JSON object.
+`;
+
+    // Call Gemini API
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }]
+        })
       }
+    );
+
+    const geminiData = await geminiResponse.json();
+    
+    if (!geminiData.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid response from Gemini API');
+    }
+
+    let outputText = geminiData.candidates[0].content.parts[0].text.trim();
+    
+    // Clean up the response - remove markdown code blocks if present
+    if (outputText.startsWith('```json')) {
+      outputText = outputText.replace(/^```json\n/, '').replace(/\n```$/, '');
+    } else if (outputText.startsWith('```')) {
+      outputText = outputText.replace(/^```\n/, '').replace(/\n```$/, '');
+    }
+    
+    // Try to parse the JSON response from Gemini
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(outputText);
+    } catch (parseError) {
+      console.error('Failed to parse Gemini response as JSON:', parseError);
+      console.error('Raw response:', outputText);
+      // If parsing fails, return the raw response
+      parsedResponse = {
+        based_on_their_interests: [`Raw AI Response: ${outputText}`],
+        based_on_common_interests: [`Raw AI Response: ${outputText}`]
+      };
+    }
+    
+    // Always return the raw response from Gemini exactly as it comes
+    const result = {
+      raw_response: outputText,
+      based_on_their_interests: parsedResponse.based_on_their_interests || [`Raw AI Response: ${outputText}`],
+      based_on_common_interests: parsedResponse.based_on_common_interests || [`Raw AI Response: ${outputText}`]
     };
 
-    res.json(result);
+    res.json({
+      ...result,
+      metadata: {
+        your_interests: yourInterests,
+        their_interests: theirInterests, 
+        common_interests: commonInterests,
+        context,
+        raw_ai_response: outputText
+      }
+    });
+
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ 

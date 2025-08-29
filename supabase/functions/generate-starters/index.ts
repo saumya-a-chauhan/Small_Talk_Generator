@@ -84,40 +84,109 @@ serve(async (req) => {
 
     // Gemini prompt
     const prompt = `
-You are a friendly and witty conversation starter generator for networking events and conferences.
+You are **The Ultimate Conversation Strategist**.  
+Your job is to generate conversation openers that make first-time interactions smooth, engaging, and meaningful.  
 
-TASK:
-You are ${your_name} with interests: ${yourInterests.join(', ')}.
-You are meeting ${their_name} with interests: ${theirInterests.join(', ')}.
-Meeting Context: ${context}
+The goal:  
+- Break the ice naturally.  
+- Build comfort and trust.  
+- Spark curiosity so the other person wants to keep talking.  
+- Respect the setting (formal vs. informal).  
+- Make ${your_name} appear confident, thoughtful, and genuinely interested in ${their_name}.  
 
-Generate two types of conversation starters:
+---
 
-1. "based_on_their_interests" → ONLY based on ${their_name}'s interests and recent relevant trends in those areas.
-2. "based_on_common_interests" → Based on overlapping/common interests between both people.
+📥 INPUTS:  
+- **You**: ${your_name}, interests: ${yourInterests.join(', ')}.  
+- **Person you're meeting**: ${their_name}, interests: ${theirInterests.join(', ')}.  
+- **Meeting Context**: ${context} (examples: networking event, job interview, coffee chat, tech conference, exhibition, meeting senior leader).  
+- **Common Interests**: ${commonInterests.join(', ') || 'None detected'}.  
 
-Rules:
-- Exactly 5 suggestions in each category.
-- Avoid politics, controversial or sensitive topics.
-- Keep them short, friendly, and natural to say out loud.
-- Make them engaging so the person will want to continue the conversation.
-- Use casual, modern language that feels authentic.
+---
 
-CRITICAL: You MUST return ONLY valid JSON in exactly this format with no extra text, no markdown, no code blocks:
+⚡ CRITICAL RULES:  
+
+1. **NEVER ask users to fill in information** - All conversation starters must be complete and self-contained
+2. **Use current knowledge and trends** - Reference real, recent developments in their fields of interest
+3. **Focus on what's provided** - Only use the interests and context given, don't assume additional information
+4. **Make it actionable immediately** - Users should be able to use these starters right away without preparation
+
+---
+
+🎯 CONVERSATION STARTER GUIDELINES:  
+
+**DO:**
+- Reference specific, recent trends in their field (AI breakthroughs, market changes, new technologies)
+- Ask about their personal journey or experiences with their interests
+- Connect to current events or industry developments
+- Use the actual interests provided without requiring more details
+- Make starters that work immediately without additional research
+
+**DON'T:**
+- Ask "if you know about X" or "mention if you have experience with Y"
+- Require users to research or look up information
+- Use placeholder text like "[mention a startup]" or "[if you know about]"
+- Assume information not provided in the inputs
+
+---
+
+📌 TASKS:  
+
+1. **based_on_their_interests**  
+   - Generate 10 conversation starters focused on ${their_name}'s specific interests: ${theirInterests.join(', ')}
+   - Use current knowledge about these fields (AI, blockchain, fintech, etc.)
+   - Reference real trends, recent developments, or industry insights
+   - Make each starter complete and ready to use immediately
+
+2. **based_on_common_interests**  
+   - Generate 10 conversation starters highlighting shared passions between ${your_name} and ${their_name}
+   - Focus on the common interests: ${commonInterests.join(', ') || 'technology and innovation'}
+   - Create natural bonding points around shared knowledge areas
+   - Encourage collaboration and knowledge exchange
+
+---
+
+💡 EXAMPLE STYLES (Context: ${context}):  
+
+**For Tech/Professional Contexts:**
+- "The recent developments in [specific technology] have been fascinating. What's your take on how it's evolving?"
+- "I've been following the [industry trend] closely. How do you see it impacting your work?"
+- "What's the most exciting project you've worked on recently in [their field]?"
+
+**For Casual Contexts:**
+- "I love how [interest] combines creativity with technical skills. What drew you to it initially?"
+- "What's the most rewarding aspect of working in [their field]?"
+- "How do you stay updated with all the rapid changes in [their industry]?"
+
+---
+
+🎯 OUTPUT:  
+Return ONLY valid JSON in the format:  
+
 {
   "based_on_their_interests": [
     "string 1",
     "string 2",
     "string 3",
     "string 4",
-    "string 5"
+    "string 5",
+    "string 6",
+    "string 7",
+    "string 8",
+    "string 9",
+    "string 10"
   ],
   "based_on_common_interests": [
     "string 1", 
     "string 2",
     "string 3",
     "string 4",
-    "string 5"
+    "string 5",
+    "string 6",
+    "string 7",
+    "string 8",
+    "string 9",
+    "string 10"
   ]
 }
 
